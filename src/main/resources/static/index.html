@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat WebSocket</title>
+<!--    <script src="resources/js/sockjs-0.3.4.js"></script>-->
+<!--    <script src="resources/js/stomp.js"></script>-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script type="text/javascript">
+        var stompClient = null;
+
+        function setConnected(connected) {
+            document.getElementById('connect').disabled = connected;
+            document.getElementById('disconnect').disabled = !connected;
+            document.getElementById('conversationDiv').style.visibility
+                = connected ? 'visible' : 'hidden';
+            document.getElementById('response').innerHTML = '';
+        }
+
+        function connect() {
+            var socket = new SockJS('/chat');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function(frame) {
+                setConnected(true);
+                console.log('Connected: ' + frame);
+                stompClient.subscribe('/topic/messages', function(messageOutput) {
+                    showMessageOutput(JSON.parse(messageOutput.body));
+                    console.log(messageOutput);
+                });
+            });
+        }
+
+        function disconnect() {
+            if(stompClient != null) {
+                stompClient.disconnect();
+            }
+            setConnected(false);
+            console.log("Disconnected");
+        }
+
+        function sendMessage() {
+            var from = document.getElementById('from').value;
+            var text = document.getElementById('text').value;
+            stompClient.send("/app/chat", {},
+                JSON.stringify({'from':from, 'text':text}));
+        }
+
+        function sendMessage2() {
+            var from = document.getElementById('from').value;
+            var text = document.getElementById('text').value;
+            stompClient.send("/app/chat2", {},
+                JSON.stringify({'from':from, 'text':text}));
+        }
+
+        function showMessageOutput(messageOutput) {
+            console.log(messageOutput);
+            var response = document.getElementById('response');
+            var p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            for (let message of messageOutput) {
+                p.appendChild(document.createTextNode(message.from + ": "
+                    + message.text + " (" + message.time + ")"));
+                response.appendChild(p);
+            }
+        }
+
+        function g1() {
+            document.getElementById('sendMessage2').style.visibility
+                = 'hidden';
+            document.getElementById('group2').style.visibility
+                = 'disable';
+        }
+        function g2() {
+            document.getElementById('sendMessage').style.visibility
+                = 'hidden';
+            document.getElementById('group1').style.visibility
+                = 'disable';
+        }
+    </script>
+</head>
+<body onload="disconnect()">
+<div>
+    <div>
+        <input type="text" id="from" placeholder="Choose a nickname"/>
+    </div>
+    <br />
+    <div>
+        <button id="connect" onclick="connect();">Connect</button>
+        <button id="disconnect" disabled="disabled" onclick="disconnect();">
+            Disconnect
+        </button>
+    </div>
+    <br />
+    <div id="conversationDiv">
+        <input type="text" id="text" placeholder="Write a message..."/>
+        <button id="sendMessage" onclick="sendMessage();">Send</button>
+        <button id="sendMessage2" onclick="sendMessage2();">Send</button>
+        <button id="group1", onclick="g1(); sendMessage()">Group 1</button>
+        <button id="group2", onclick="g2(); sendMessage2()">Group 2</button>
+        <p id="response"></p>
+    </div>
+
+
+
+</div>
+
+
+
+<!--<script src="/js/script.js"></script>-->
+</body>
+</html>
